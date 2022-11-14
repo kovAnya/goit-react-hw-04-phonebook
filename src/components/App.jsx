@@ -1,91 +1,82 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { ContactForm } from './ContactForm/ContactForm';
 import { Filter } from './Filter/Filter';
 import { ContactList } from './ContactList/ContactList';
 import { RootEl } from './App.styled';
 
-export class App extends React.Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState([]);
+  const [filter, setFilter] = useState('');
 
-  onFormSubmit = evt => {
+  const onFormSubmit = evt => {
     evt.preventDefault();
     const contactName = evt.currentTarget.elements.name.value;
     const contactPhone = evt.currentTarget.elements.number.value;
 
-    if (this.searchForDublicate(contactName)) {
+    if (searchForDublicate(contactName)) {
       evt.currentTarget.reset();
       return alert(`${contactName} is already in contacts.`);
     }
 
-    this.setState(prevState => {
-      return {
-        contacts: [
-          ...prevState.contacts,
-          {
-            id: nanoid(),
-            name: contactName,
-            number: contactPhone,
-          },
-        ],
-      };
+    setContacts(prevState => {
+      return [
+        ...prevState,
+        {
+          id: nanoid(),
+          name: contactName,
+          number: contactPhone,
+        },
+      ];
     });
 
     evt.currentTarget.reset();
   };
 
-  searchForDublicate = searchedName => {
-    return this.state.contacts.some(contact => contact.name === searchedName);
+  const searchForDublicate = searchedName => {
+    return contacts.some(contact => contact.name === searchedName);
   };
 
-  onFilterChange = event => {
+  const onFilterChange = event => {
     const filterValue = event.target.value;
-    this.setState({ filter: filterValue });
+    setFilter(filterValue);
   };
 
-  onDelete = evt => {
+  const onDelete = evt => {
     const nameToRemove = evt.currentTarget.dataset.name;
-    this.setState(prevState => {
-      return {
-        contacts: prevState.contacts.filter(
-          contact => contact.name !== nameToRemove
-        ),
-      };
+    setContacts(prevState => {
+      return prevState.filter(contact => contact.name !== nameToRemove);
     });
   };
 
-  componentDidMount() {
+  useEffect(() => {
     const contactsFromStoridge = JSON.parse(localStorage.getItem('CONTACTS'));
 
     if (contactsFromStoridge) {
-      this.setState({ contacts: contactsFromStoridge });
+      setContacts(contactsFromStoridge);
     }
-  }
+  }, []);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.contacts === prevState.contacts) {
+  useEffect(() => {
+    if (contacts.length === 0) {
       return;
     }
-    localStorage.setItem('CONTACTS', JSON.stringify(this.state.contacts));
-  }
 
-  render() {
-    return (
-      <RootEl>
-        <h1>Phonebook</h1>
-        <ContactForm onFormSubmit={this.onFormSubmit} />
+    localStorage.setItem('CONTACTS', JSON.stringify(contacts));
+  }, [contacts]);
 
-        <h2>Contacts</h2>
-        <Filter value={this.state.filter} onFilter={this.onFilterChange} />
-        <ContactList
-          contacts={this.state.contacts}
-          filterValue={this.state.filter}
-          onDelete={this.onDelete}
-        />
-      </RootEl>
-    );
-  }
-}
+  return (
+    <RootEl>
+      <h1>Phonebook</h1>
+      <ContactForm onFormSubmit={onFormSubmit} />
+
+      <h2>Contacts</h2>
+      <Filter value={filter} onFilter={onFilterChange} />
+      <ContactList
+        contacts={contacts}
+        filterValue={filter}
+        onDelete={onDelete}
+      />
+    </RootEl>
+  );
+};
